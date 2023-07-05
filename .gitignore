@@ -1,0 +1,17 @@
+# TRASH FOLDERS 
+env/
+__pycache__/
+
+
+# TRASH FILES
+.DS_Store
+
+
+# CUSTOM FOLDERS
+queue/
+sessions/
+
+
+# CUSTOM FILES
+settings*.json
+db.sqlite3
