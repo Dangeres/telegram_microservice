@@ -10,6 +10,7 @@ __pycache__/
 # CUSTOM FOLDERS
 queue/
 sessions/
+errors/
 
 
 # CUSTOM FILES

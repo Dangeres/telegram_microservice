@@ -50,7 +50,7 @@ class Jsona:
 
                 shutil.move(src = temp_file.name, dst = self.path)
 
-            return {'success': True}
+                return {'success': True}
         except Exception as e:
             os.remove(temp_file.name)
             self.error_proceed(e)

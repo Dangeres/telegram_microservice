@@ -14,6 +14,7 @@ from telethon.tl.functions.users import GetFullUserRequest
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 FOLDER_QUEUE = BASE_DIR / 'queue'
+FOLDER_ERRORS = BASE_DIR / 'errors'
 
 
 async def ticker(app):
@@ -47,6 +48,15 @@ async def ticker(app):
 
                 jsona.save_json(
                     data=data,
+                )
+
+                jsona_error = jsn.Jsona(FOLDER_ERRORS, f'{int(time.time())}.json')
+
+                jsona_error.save_json(
+                    data = {
+                        'error': type(e),
+                        'description': e.__str__,
+                    }
                 )
 
             print(data)

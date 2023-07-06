@@ -7,6 +7,7 @@ from uuid import uuid4
 import tg.settings as settings
 
 import json
+import time
 import os
 
 
@@ -61,6 +62,7 @@ async def message(request):
 
         return jsona.save_json(data = params)
 
+
     async def get_requests(params, *args, **kwargs):
         params = params.get('data', {})
 
@@ -91,5 +93,14 @@ async def message(request):
         result = await reqexe.execute()
     except Exception as e:
         print(e)
+
+        jsona = jsn.Jsona(settings.FOLDER_ERRORS, f'{int(time.time())}.json')
+
+        jsona.save_json(
+            data = {
+                'error': type(e),
+                'description': e.__str__,
+            }
+        )
     
     return await response_wrapper(result)

@@ -19,8 +19,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 FOLDER_QUEUE = os.path.join(BASE_DIR.parent, 'queue')
 
+FOLDER_ERRORS = os.path.join(BASE_DIR.parent, 'errors')
+
 for folder in [
     FOLDER_QUEUE,
+    FOLDER_ERRORS,
 ]:
     os.makedirs(
         name = folder,
