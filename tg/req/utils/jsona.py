@@ -43,16 +43,25 @@ class Jsona:
         ident = None
     ) -> bool:
         mode = 'w'
+        use_temp_file = False
 
         try:
-            with NamedTemporaryFile(mode = mode, encoding = self.encoding, delete = False) as temp_file:
-                json.dump(obj = data, fp = temp_file, sort_keys = sort, indent = ident, ensure_ascii = not correct_ascii)
+            if use_temp_file:
+                with NamedTemporaryFile(mode = mode, encoding = self.encoding, delete = False) as temp_file:
+                    json.dump(obj = data, fp = temp_file, sort_keys = sort, indent = ident, ensure_ascii = not correct_ascii)
 
-                shutil.move(src = temp_file.name, dst = self.path)
+                    shutil.move(src = temp_file.name, dst = self.path)
 
-                return {'success': True}
+                    return {'success': True}
+            else:
+                with open(self.path, mode=mode) as file:
+                    json.dump(obj = data, fp = file, sort_keys = sort, indent = ident, ensure_ascii = not correct_ascii)
+
+                    return {'success': True}
         except Exception as e:
-            os.remove(temp_file.name)
+            if use_temp_file:
+                os.remove(temp_file.name)
+            
             self.error_proceed(e)
 
         return {'success': False}
