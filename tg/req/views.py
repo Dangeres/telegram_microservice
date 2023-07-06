@@ -59,7 +59,7 @@ async def message(request):
             name_file='%s.json' % (params["id"]),
         )
 
-        return await jsona.save_json(data = params)
+        return jsona.save_json(data = params)
 
     async def get_requests(params, *args, **kwargs):
         params = params.get('data', {})
