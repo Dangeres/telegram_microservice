@@ -24,13 +24,19 @@ async def ticker(app):
 
             data = jsona.return_json().get('data', {})
 
-            if data.get('send_time', int(time.time())) > int(time.time()):
+            now_time = int(time.time())
+
+            if data.get('send_time', now_time) > now_time:
+                continue
+
+            if not data.get('sender') or not data.get('text'):
                 continue
 
             try:
                 result = await app.send_message(
                     entity = data.get('sender'), 
                     message = data.get('text', 'no text'),
+                    parse_mode = 'HTML',
                 )
 
                 if result.id:
@@ -59,9 +65,7 @@ async def ticker(app):
                     }
                 )
 
-            print(data)
-
-        await asyncio.sleep(2)
+        await asyncio.sleep(1)
 
 
 async def main():
