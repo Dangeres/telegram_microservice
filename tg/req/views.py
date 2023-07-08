@@ -53,7 +53,7 @@ async def message(request):
         params = params.get('data', {})
 
         if not params.get('id'):
-            params['id'] = uuid4()
+            params['id'] = str(uuid4())
 
         jsona = jsn.Jsona(
             path_file=settings.FOLDER_QUEUE, 
