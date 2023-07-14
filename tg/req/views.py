@@ -104,3 +104,65 @@ async def message(request):
         )
     
     return await response_wrapper(result)
+
+
+async def file(request):
+    async def post_requests(params, *args, **kwargs):
+        params = params.get('data', {})
+
+        request_file = request.FILES['file']
+
+        file_name = '.'.join(
+            [
+                str(uuid4()),
+                request_file._get_name().rsplit(".", 1)[-1] 
+                    if len(request_file._get_name().rsplit(".", 1)) > 1 
+                    else ''
+            ]
+        )
+
+        file_path = os.path.join(
+            settings.FOLDER_DOWNLOADS,
+            file_name,
+        )
+
+        with open(file_path, "wb") as file:
+            content = request_file.read()
+            file.seek(0)
+            file.write(content)
+
+        return {
+            'success': True,
+            'type': 'post',
+            'file_name': file_name,
+        }
+
+
+    async def get_requests(params, *args, **kwargs):
+        params = params.get('data', {})
+
+        return {
+            'success': True,
+            'type': 'get',
+        }
+    
+
+    result = {"success": False}
+
+    try:
+        reqexe = RequestExecuter(request = request, get = get_requests, post = post_requests)
+        
+        result = await reqexe.execute()
+    except Exception as e:
+        print(e)
+
+        jsona = jsn.Jsona(settings.FOLDER_ERRORS, f'{int(time.time())}.json')
+
+        jsona.save_json(
+            data = {
+                'error': type(e),
+                'description': e.__str__,
+            }
+        )
+    
+    return await response_wrapper(result)

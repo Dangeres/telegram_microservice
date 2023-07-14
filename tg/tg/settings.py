@@ -21,9 +21,13 @@ FOLDER_QUEUE = os.path.join(BASE_DIR.parent, 'queue')
 
 FOLDER_ERRORS = os.path.join(BASE_DIR.parent, 'errors')
 
+FOLDER_DOWNLOADS = os.path.join(BASE_DIR.parent, 'downloads')
+
+
 for folder in [
     FOLDER_QUEUE,
     FOLDER_ERRORS,
+    FOLDER_DOWNLOADS,
 ]:
     os.makedirs(
         name = folder,
@@ -130,6 +134,7 @@ USE_I18N = True
 
 USE_TZ = True
 
+DATA_UPLOAD_MAX_MEMORY_SIZE = 1550 * 1024 * 1024
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/

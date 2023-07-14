@@ -18,11 +18,13 @@ from django.urls import path
 
 from req import views
 
+import typing
+
 
 pattern_with_params = r'/(%s)(\/)?(\?)?[a-zA-Z0-9\=\&]+'
 
 
-def extend_path(name: str, handler):
+def extend_path(name: str, handler: typing.Callable):
     return [
         path(name + i, handler)
         for i in ['', '/']
@@ -32,9 +34,22 @@ def extend_path(name: str, handler):
 urlpatterns = []
 
 urlpatterns.extend(
-    extend_path('ping', views.ping,)
+    extend_path(
+        name = 'ping', 
+        handler = views.ping,
+    )
 )
 
 urlpatterns.extend(
-    extend_path('message', views.message,)
+    extend_path(
+        name = 'message',
+        handler = views.message,
+    )
+)
+
+urlpatterns.extend(
+    extend_path(
+        name = 'file',
+        handler = views.file,
+    )
 )

@@ -34,7 +34,7 @@ class RequestExecuter:
                     'type': 'json',
                     'data': json.loads(getattr(self.request, 'body', '\{\}')) or {},
                 }
-            except json.decoder.JSONDecodeError:
+            except (json.decoder.JSONDecodeError, UnicodeDecodeError):
                 params  = {
                     'type': 'str',
                     'data': str(getattr(self.request, 'body') or ''),

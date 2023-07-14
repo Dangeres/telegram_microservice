@@ -15,6 +15,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 FOLDER_QUEUE = BASE_DIR / 'queue'
 FOLDER_ERRORS = BASE_DIR / 'errors'
+FOLDER_DOWNLOADS = BASE_DIR / 'downloads'
 
 
 async def ticker(app):
@@ -35,12 +36,21 @@ async def ticker(app):
             try:
                 result = await app.send_message(
                     entity = data.get('sender'), 
-                    message = data.get('text', 'no text'),
+                    message = data.get('text', ''),
+                    reply_to = data.get('reply_to'),
+                    file = FOLDER_DOWNLOADS / data['file'] if data.get('file') else '',
+                    force_document = data.get('force_document', False),
                     parse_mode = 'HTML',
                 )
 
                 if result.id:
-                    os.remove(FOLDER_QUEUE / file)
+                    try:
+                        if data.get('file') and not data.get('not_remove_file'):
+                            os.remove(FOLDER_DOWNLOADS / data['file'])
+                        
+                        os.remove(FOLDER_QUEUE / file)
+                    except Exception as e:
+                        print(e)
 
             except Exception as e:
                 print(e)
