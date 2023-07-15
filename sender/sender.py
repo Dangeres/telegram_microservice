@@ -38,7 +38,7 @@ async def ticker(app):
                     entity = data.get('sender'), 
                     message = data.get('text', ''),
                     reply_to = data.get('reply_to'),
-                    file = FOLDER_DOWNLOADS / data['file'] if data.get('file') else '',
+                    file = FOLDER_DOWNLOADS / data['file'] if data.get('file') else None,
                     force_document = data.get('force_document', False),
                     parse_mode = 'HTML',
                 )
