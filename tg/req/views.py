@@ -60,7 +60,25 @@ async def message(request):
             name_file='%s.json' % (params["id"]),
         )
 
-        return jsona.save_json(data = params)
+        if params.get('file') and not os.path.exists(
+            os.path.join(
+                settings.FOLDER_DOWNLOADS,
+                params.get('file'),
+            )
+        ):
+            return {
+                'success': False,
+                'error': f'File {params["file"]} doesn\'t exist'
+            }
+
+        result = {
+            'success': jsona.save_json(data = params).get('success'),
+        }
+
+        if result.get('success'):
+            result['id'] = params['id']
+
+        return result
 
 
     async def get_requests(params, *args, **kwargs):

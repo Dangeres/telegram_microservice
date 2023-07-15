@@ -30,7 +30,15 @@ async def ticker(app):
             if data.get('send_time', now_time) > now_time:
                 continue
 
-            if not data.get('sender') or not data.get('text'):
+            if not (
+                data.get('sender') and (
+                    data.get('text') or 
+                    (
+                        data.get('file') and 
+                        os.path.exists(FOLDER_DOWNLOADS / data['file'])
+                    )
+                )
+            ):
                 continue
 
             try:
@@ -40,7 +48,8 @@ async def ticker(app):
                     reply_to = data.get('reply_to'),
                     file = FOLDER_DOWNLOADS / data['file'] if data.get('file') else None,
                     force_document = data.get('force_document', False),
-                    parse_mode = 'HTML',
+                    link_preview = data.get('preview', False),
+                    parse_mode = data.get('parse_mode', 'HTML'),
                 )
 
                 if result.id:
