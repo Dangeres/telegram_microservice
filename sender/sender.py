@@ -104,6 +104,30 @@ async def main():
         bot_token = login_data['token'],
     )
 
+
+    @app.on(
+        events.NewMessage(
+            incoming=True,
+            pattern=r"(\/((start)))",
+        )
+    )
+    async def handle_start(message):
+        sender_id = getattr(message, 'chat_id', None)
+        usernname = getattr(message.chat, 'username', None)
+
+        username_text = f'Ваш username = <code>{usernname}</code>\n' if usernname else ''
+        userid_text = f'Ваш id = <code>{sender_id}</code>\n' if sender_id else ''
+        
+        if not sender_id:
+            return
+        
+        await app.send_message(
+            entity=sender_id,
+            message=f'Добро пожаловать!\n\n{userid_text}{username_text}'.strip(),
+            parse_mode="HTML",
+        )
+    
+
     asyncio.get_event_loop().create_task(ticker(app))
 
     await app.run_until_disconnected()
