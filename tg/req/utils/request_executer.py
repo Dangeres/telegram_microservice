@@ -30,10 +30,18 @@ class RequestExecuter:
         
         if request_type == 'post':
             try:
-                params = {
-                    'type': 'json',
-                    'data': json.loads(getattr(self.request, 'body', '\{\}')) or {},
-                }
+                if self.request.FILES:
+                    params = {
+                        'type': 'json',
+                        'data': {},
+                    }
+                
+                else:
+                    params = {
+                        'type': 'json',
+                        'data': json.loads(self.request.body) if getattr(self.request, 'body') else {},
+                    }
+            
             except (json.decoder.JSONDecodeError, UnicodeDecodeError):
                 params  = {
                     'type': 'str',
