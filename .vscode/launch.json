@@ -8,6 +8,7 @@
             "name": "Python: Django",
             "type": "python",
             "request": "launch",
+            // "program": "${workspaceFolder}/sender/sender.py",
             "program": "${workspaceFolder}/tg/manage.py",
             "args": [
                 "runserver",

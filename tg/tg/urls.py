@@ -53,3 +53,10 @@ urlpatterns.extend(
         handler = views.file,
     )
 )
+
+urlpatterns.extend(
+    extend_path(
+        name = 'queue',
+        handler = views.queue,
+    )
+)

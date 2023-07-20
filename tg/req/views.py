@@ -6,6 +6,8 @@ from uuid import uuid4
 
 import tg.settings as settings
 
+import functools
+import secrets
 import json
 import time
 import os
@@ -48,6 +50,37 @@ async def ping(request):
     return await response_wrapper(result)
 
 
+async def queue(request):
+    async def get_requests(params, *args, **kwargs):
+        params = params.get('data', {})
+
+        return await response_wrapper(
+            data = {
+                'data': os.listdir(settings.FOLDER_QUEUE),
+            }
+        )
+    
+    result = {"success": False}
+
+    try:
+        reqexe = RequestExecuter(request = request, get = get_requests)
+        
+        result = await reqexe.execute()
+    except Exception as e:
+        print(e)
+
+        jsona = jsn.Jsona(settings.FOLDER_ERRORS, f'{int(time.time())}.json')
+
+        jsona.save_json(
+            data = {
+                'error': type(e),
+                'description': e.__str__,
+            }
+        )
+    
+    return await response_wrapper(result)
+
+
 async def message(request):
     async def post_requests(params, *args, **kwargs):
         params = params.get('data', {})
@@ -59,6 +92,29 @@ async def message(request):
             path_file=settings.FOLDER_QUEUE, 
             name_file='%s.json' % (params["id"]),
         )
+
+        params['secret'] = secrets.token_urlsafe()
+
+        one_of_required_fields = [
+            'text',
+            'file',
+        ]
+
+        if not (
+            params.get('sender') and 
+            (
+                functools.reduce(
+                    lambda x, y: x or y, 
+                    map(lambda x, y: x in y, one_of_required_fields, params)
+                )
+            )
+        ):
+            return {
+                'success': False,
+                'error': 'Need one of field [%s]' % (
+                    '/'.join(one_of_required_fields),
+                )
+            }
 
         if params.get('file') and not os.path.exists(
             os.path.join(
@@ -77,6 +133,7 @@ async def message(request):
 
         if result.get('success'):
             result['id'] = params['id']
+            result['secret'] = params['secret']
 
         return result
 
@@ -85,6 +142,7 @@ async def message(request):
         params = params.get('data', {})
 
         id_data = None
+        error = None
 
         if params.get('id'):
             jsona = jsn.Jsona(
@@ -93,13 +151,20 @@ async def message(request):
             )
 
             id_data = jsona.return_json().get('data')
+        
+        if not id_data:
+            error = 'No data for this id'
+        
+        elif id_data.get('secret') != params.get('secret'):
+            error = 'Secret isnt correct'
+            id_data = None
 
         return await response_wrapper(
             data = {
-                'id_data': id_data,
-                'queue_files': os.listdir(
-                    path = settings.FOLDER_QUEUE,
-                )
+                'data': id_data,
+            } if not error else {
+                'data': id_data,
+                'error': error,
             }
         )
     
