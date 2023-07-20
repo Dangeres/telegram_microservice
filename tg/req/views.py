@@ -169,7 +169,7 @@ async def message(request):
             id_data = jsona.return_json().get('data')
 
         hash_obj = hashlib.sha256(params.get('id', '').encode())
-        hash_obj.update(params.get('secret', ''))
+        hash_obj.update(params.get('secret', '').encode())
         
         if not id_data:
             error = 'No data for this id'
@@ -180,12 +180,14 @@ async def message(request):
 
         if id_data:
             for key in restrict_fields:
-                id_data.pop(key)
+                id_data.pop(key, None)
 
         return await response_wrapper(
             data = {
+                'success': True,
                 'data': id_data,
             } if not error else {
+                'success': False,
                 'data': id_data,
                 'error': error,
             }
