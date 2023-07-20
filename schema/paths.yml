@@ -1,0 +1,82 @@
+openapi: '3.0.2'
+
+info:
+  title: Сервис по отправке сообщений в телеграмм
+  version: '1.0'
+
+servers:
+  - url: http://127.0.0.1:8080
+
+paths:
+  /ping:
+    get:
+      responses:
+        '200':
+          description: OK
+      
+    post:
+      responses:
+        '200':
+          description: OK
+
+  /message:
+    get:
+      parameters:
+        - in: query
+          required: true
+          name: id
+          example: '05aa5b4f-8805-4adf-898e-2507a4c95acf'
+          schema:
+            type: string
+        - in: query
+          required: true
+          name: secret
+          example: 'nPL42LE_Y9RwfOYWcD5PMrye9clNqJpxQRdSa5BY6DM'
+          schema:
+            type: string
+      
+      responses:
+        '200':
+          description: OK
+
+    post:
+      parameters:
+        - in: query
+          required: true
+          name: sender
+          example: 'yablokov'
+          schema:
+            type: string
+        - in: query
+          required: true
+          name: text
+          example: 'hello world'
+          schema:
+            type: string
+      
+      responses:
+        '200':
+          description: OK
+  
+  /file:
+    get:
+      responses:
+        '200':
+          description: OK
+
+    post:
+      responses:
+        '200':
+          description: OK
+  
+  /queue:
+    get:
+      responses:
+        '200':
+          description: OK
+
+    post:
+      responses:
+        '200':
+          description: OK
+          
