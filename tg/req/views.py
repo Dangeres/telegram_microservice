@@ -7,6 +7,7 @@ from uuid import uuid4
 import tg.settings as settings
 
 import functools
+import hashlib
 import secrets
 import json
 import time
@@ -56,7 +57,12 @@ async def queue(request):
 
         return await response_wrapper(
             data = {
-                'data': os.listdir(settings.FOLDER_QUEUE),
+                'data': list(
+                    map(
+                        lambda x: x.replace('.json', ''), 
+                        os.listdir(settings.FOLDER_QUEUE)
+                    )
+                ),
             }
         )
     
@@ -73,8 +79,8 @@ async def queue(request):
 
         jsona.save_json(
             data = {
-                'error': type(e),
-                'description': e.__str__,
+                'error': str(type(e)),
+                'description': str(e),
             }
         )
     
@@ -83,6 +89,11 @@ async def queue(request):
 
 async def message(request):
     async def post_requests(params, *args, **kwargs):
+        one_of_required_fields = [
+            'text',
+            'file',
+        ]
+
         params = params.get('data', {})
 
         if not params.get('id'):
@@ -93,12 +104,13 @@ async def message(request):
             name_file='%s.json' % (params["id"]),
         )
 
-        params['secret'] = secrets.token_urlsafe()
+        secret = secrets.token_urlsafe()
 
-        one_of_required_fields = [
-            'text',
-            'file',
-        ]
+        hash_obj = hashlib.sha256(params.get('id', '').encode())
+        hash_obj.update(secret.encode())
+
+        params['secret'] = hash_obj.hexdigest()
+        params['time'] = int(time.time())
 
         if not (
             params.get('sender') and 
@@ -133,12 +145,16 @@ async def message(request):
 
         if result.get('success'):
             result['id'] = params['id']
-            result['secret'] = params['secret']
+            result['secret'] = secret
 
         return result
 
 
     async def get_requests(params, *args, **kwargs):
+        restrict_fields = [
+            'secret',
+        ]
+
         params = params.get('data', {})
 
         id_data = None
@@ -151,13 +167,20 @@ async def message(request):
             )
 
             id_data = jsona.return_json().get('data')
+
+        hash_obj = hashlib.sha256(params.get('id', '').encode())
+        hash_obj.update(params.get('secret', ''))
         
         if not id_data:
             error = 'No data for this id'
         
-        elif id_data.get('secret') != params.get('secret'):
-            error = 'Secret isnt correct'
+        elif id_data.get('secret') != hash_obj.hexdigest():
+            error = 'Secret is not correct'
             id_data = None
+
+        if id_data:
+            for key in restrict_fields:
+                id_data.pop(key)
 
         return await response_wrapper(
             data = {
@@ -181,8 +204,8 @@ async def message(request):
 
         jsona.save_json(
             data = {
-                'error': type(e),
-                'description': e.__str__,
+                'error': str(type(e)),
+                'description': str(e),
             }
         )
     
@@ -243,8 +266,8 @@ async def file(request):
 
         jsona.save_json(
             data = {
-                'error': type(e),
-                'description': e.__str__,
+                'error': str(type(e)),
+                'description': str(e),
             }
         )
     

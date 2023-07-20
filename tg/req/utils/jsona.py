@@ -59,6 +59,8 @@ class Jsona:
 
                     return {'success': True}
         except Exception as e:
+            print(e)
+
             if use_temp_file:
                 os.remove(temp_file.name)
             
