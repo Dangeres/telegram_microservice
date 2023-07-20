@@ -88,6 +88,14 @@ async def queue(request):
 
 
 async def message(request):
+    def has_one_of_field(x, y):
+        for field in x:
+            if field in y:
+                return True
+        
+        return False
+
+
     async def post_requests(params, *args, **kwargs):
         one_of_required_fields = [
             'text',
@@ -114,12 +122,7 @@ async def message(request):
 
         if not (
             params.get('sender') and 
-            (
-                functools.reduce(
-                    lambda x, y: x or y, 
-                    map(lambda x, y: x in y, one_of_required_fields, params)
-                )
-            )
+            has_one_of_field(one_of_required_fields, params)
         ):
             return {
                 'success': False,
