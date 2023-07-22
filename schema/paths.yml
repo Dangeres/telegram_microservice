@@ -19,6 +19,17 @@ paths:
         '200':
           description: OK
 
+  /user:
+    get:
+      responses:
+        '200':
+          description: OK
+
+    post:
+      responses:
+        '200':
+          description: OK
+
   /message:
     get:
       parameters:
@@ -32,6 +43,12 @@ paths:
           required: true
           name: secret
           example: 'nPL42LE_Y9RwfOYWcD5PMrye9clNqJpxQRdSa5BY6DM'
+          schema:
+            type: string
+        - in: header
+          required: true
+          name: token
+          example: 'admin'
           schema:
             type: string
       
@@ -53,6 +70,12 @@ paths:
           example: 'hello world'
           schema:
             type: string
+        - in: header
+          required: true
+          name: token
+          example: 'admin'
+          schema:
+            type: string
       
       responses:
         '200':
@@ -60,11 +83,27 @@ paths:
   
   /file:
     get:
+      parameters:
+        - in: header
+          required: true
+          name: token
+          example: 'admin'
+          schema:
+            type: string
+      
       responses:
         '200':
           description: OK
 
     post:
+      parameters:
+        - in: header
+          required: true
+          name: token
+          example: 'admin'
+          schema:
+            type: string
+      
       responses:
         '200':
           description: OK

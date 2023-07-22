@@ -60,3 +60,10 @@ urlpatterns.extend(
         handler = views.queue,
     )
 )
+
+urlpatterns.extend(
+    extend_path(
+        name = 'user',
+        handler = views.user,
+    )
+)

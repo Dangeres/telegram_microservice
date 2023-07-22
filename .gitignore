@@ -12,6 +12,7 @@ queue/
 sessions/
 errors/
 downloads/
+tokens/
 
 
 # CUSTOM FILES

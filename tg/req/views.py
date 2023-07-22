@@ -2,6 +2,7 @@ from django.http import HttpResponse
 
 from .utils.request_executer import RequestExecuter
 from .utils import jsona as jsn
+from .decorators import access
 from uuid import uuid4
 
 import tg.settings as settings
@@ -87,6 +88,7 @@ async def queue(request):
     return await response_wrapper(result)
 
 
+@access
 async def message(request):
     def has_one_of_field(x, y):
         for field in x:
@@ -117,8 +119,13 @@ async def message(request):
         hash_obj = hashlib.sha256(params.get('id', '').encode())
         hash_obj.update(secret.encode())
 
+        token = hashlib.sha256(
+            request.headers.get('token').encode()
+        ).hexdigest()
+
         params['secret'] = hash_obj.hexdigest()
         params['time'] = int(time.time())
+        params['token'] = token
 
         if not (
             params.get('sender') and 
@@ -156,6 +163,7 @@ async def message(request):
     async def get_requests(params, *args, **kwargs):
         restrict_fields = [
             'secret',
+            'token',
         ]
 
         params = params.get('data', {})
@@ -173,12 +181,20 @@ async def message(request):
 
         hash_obj = hashlib.sha256(params.get('id', '').encode())
         hash_obj.update(params.get('secret', '').encode())
+
+        token = hashlib.sha256(
+            request.headers.get('token').encode()
+        ).hexdigest()
         
         if not id_data:
             error = 'No data for this id'
         
         elif id_data.get('secret') != hash_obj.hexdigest():
             error = 'Secret is not correct'
+            id_data = None
+
+        elif id_data.get('token') != token:
+            error = 'Token is not correct'
             id_data = None
 
         if id_data:
@@ -217,6 +233,7 @@ async def message(request):
     return await response_wrapper(result)
 
 
+@access
 async def file(request):
     async def post_requests(params, *args, **kwargs):
         params = params.get('data', {})
@@ -246,6 +263,68 @@ async def file(request):
             'success': True,
             'type': 'post',
             'file_name': file_name,
+        }
+
+
+    async def get_requests(params, *args, **kwargs):
+        params = params.get('data', {})
+
+        return {
+            'success': True,
+            'type': 'get',
+        }
+    
+
+    result = {"success": False}
+
+    try:
+        reqexe = RequestExecuter(request = request, get = get_requests, post = post_requests)
+        
+        result = await reqexe.execute()
+    except Exception as e:
+        print(e)
+
+        jsona = jsn.Jsona(settings.FOLDER_ERRORS, f'{int(time.time())}.json')
+
+        jsona.save_json(
+            data = {
+                'error': str(type(e)),
+                'description': str(e),
+            }
+        )
+    
+    return await response_wrapper(result)
+
+
+async def user(request):
+    async def post_requests(params, *args, **kwargs):
+        params = params.get('data', {})
+
+        while True:
+            token = str(uuid4())
+
+            hashed_token = hashlib.sha256(
+                token.encode()
+            ).hexdigest()
+
+            jsona = jsn.Jsona(
+                path_file = settings.FOLDER_TOKENS,
+                name_file = f'{hashed_token}.json',
+            )
+
+            if not jsona.return_json().get('success'):
+                result = jsona.save_json(
+                    data = {
+                        'untill_time': int(time.time()) + 31 * 24 * 60 * 60,
+                    }
+                )
+
+                if result.get('success'):
+                    break
+
+        return {
+            'success': True,
+            'token': token,
         }
 
 

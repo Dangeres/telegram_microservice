@@ -23,11 +23,14 @@ FOLDER_ERRORS = os.path.join(BASE_DIR.parent, 'errors')
 
 FOLDER_DOWNLOADS = os.path.join(BASE_DIR.parent, 'downloads')
 
+FOLDER_TOKENS = os.path.join(BASE_DIR.parent, 'tokens')
+
 
 for folder in [
     FOLDER_QUEUE,
     FOLDER_ERRORS,
     FOLDER_DOWNLOADS,
+    FOLDER_TOKENS,
 ]:
     os.makedirs(
         name = folder,
