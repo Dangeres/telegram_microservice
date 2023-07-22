@@ -54,6 +54,19 @@ class RequestExecuter:
                 'data': getattr(self.request, 'GET').dict(),
             }
         
+        elif request_type == 'delete':
+            try:
+                params = {
+                    'type': 'json',
+                    'data': json.loads(self.request.body) if getattr(self.request, 'body') else {},
+                }
+            
+            except (json.decoder.JSONDecodeError, UnicodeDecodeError):
+                params  = {
+                    'type': 'str',
+                    'data': str(getattr(self.request, 'body') or ''),
+                }
+        
         return await getattr(self, request_type)(params = params, *args, **kwargs)
 
 

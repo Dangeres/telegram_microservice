@@ -19,6 +19,7 @@ paths:
         '200':
           description: OK
 
+  
   /user:
     get:
       responses:
@@ -30,9 +31,10 @@ paths:
         '200':
           description: OK
 
-  /message:
+  /message:    
     get:
       parameters:
+        - $ref: "#/components/parameters/Token"
         - in: query
           required: true
           name: id
@@ -45,51 +47,57 @@ paths:
           example: 'nPL42LE_Y9RwfOYWcD5PMrye9clNqJpxQRdSa5BY6DM'
           schema:
             type: string
-        - in: header
-          required: true
-          name: token
-          example: 'admin'
-          schema:
-            type: string
       
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageGetResponse'
 
     post:
       parameters:
-        - in: query
-          required: true
-          name: sender
-          example: 'yablokov'
-          schema:
-            type: string
-        - in: query
-          required: true
-          name: text
-          example: 'hello world'
-          schema:
-            type: string
-        - in: header
-          required: true
-          name: token
-          example: 'admin'
-          schema:
-            type: string
+        - $ref: "#/components/parameters/Token"
+
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MessagePost"
       
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessagePostResponse'
+
+    delete:
+      parameters:
+        - $ref: "#/components/parameters/Token"
+      
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MessageDelete'
+        
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandartResponse"
   
+
   /file:
     get:
       parameters:
-        - in: header
-          required: true
-          name: token
-          example: 'admin'
-          schema:
-            type: string
+        - $ref: "#/components/parameters/Token"
       
       responses:
         '200':
@@ -97,12 +105,7 @@ paths:
 
     post:
       parameters:
-        - in: header
-          required: true
-          name: token
-          example: 'admin'
-          schema:
-            type: string
+        - $ref: "#/components/parameters/Token"
       
       responses:
         '200':
@@ -119,3 +122,143 @@ paths:
         '200':
           description: OK
           
+components:
+  parameters:
+    Token:
+      in: header
+      required: true
+      name: token
+      example: 'admin'
+      schema:
+        type: string
+
+  schemas:
+    MessageDelete:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - secret
+      properties:
+        id:
+          type: string
+          example: '11'
+        secret:
+          type: string
+          example: '53c59acfe37376a55c29db0a5f1505c8786160011594a40ecd995c97f880628d'
+    
+    MessagePost:
+      type: object
+      additionalProperties: false
+      required:
+        - sender
+      properties:
+        sender:
+          type: string
+          example: 'yablokov'
+
+        text:
+          type: string
+          example: 'hello world'
+
+        file:
+          type: string
+          example: '05aa5b4f-8805-4adf-898e-2507a4c95acf.mp4'
+
+        force_document:
+          type: boolean
+          example: true
+
+        reply_to:
+          type: integer
+          example: 10
+
+        preview:
+          type: boolean
+          example: true
+
+
+    MessageGetResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - sender
+      properties:
+        id:
+          type: string
+          example: 'ad558c33-1b41-46e1-9212-22eb20c03197'
+
+        sender:
+          type: string
+          example: 'yablokov'
+
+        text:
+          type: string
+          example: 'hello world'
+
+        file:
+          type: string
+          example: '05aa5b4f-8805-4adf-898e-2507a4c95acf.mp4'
+
+        force_document:
+          type: boolean
+          example: true
+
+        reply_to:
+          type: integer
+          example: 10
+
+        preview:
+          type: boolean
+          example: true
+
+        time:
+          type: integer
+          example: 1692650194
+
+        send_time_grade:
+          type: integer
+          example: 1
+
+        send_time:
+          type: integer
+          example: 16926501940
+
+    StandartResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - success
+      properties:
+        success:
+          type: boolean
+          example: true
+        
+        error:
+          type: string
+          example: FileNotFound
+
+    MessagePostResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - success
+        - secret
+        - id
+      properties:
+        success:
+          type: boolean
+          example: true
+        
+        secret:
+          type: string
+          example: 'u5UoKtWM2AdRB6byFiSt65kV9kyj31WInKfJGPLJmpw'
+        
+        id:
+          type: string
+          example: 'ad558c33-1b41-46e1-9212-22eb20c03197'
+
+        error:
+          type: string
+          example: FileNotFound

@@ -106,8 +106,7 @@ async def message(request):
 
         params = params.get('data', {})
 
-        if not params.get('id'):
-            params['id'] = str(uuid4())
+        params['id'] = str(uuid4())
 
         jsona = jsn.Jsona(
             path_file=settings.FOLDER_QUEUE, 
@@ -212,10 +211,61 @@ async def message(request):
             }
         )
     
+
+    async def delete_requests(params, *args, **kwargs):
+        params = params.get('data', {})
+
+        if params.get('id'):
+            jsona = jsn.Jsona(
+                path_file=settings.FOLDER_QUEUE, 
+                name_file='%s.json' % (params["id"]),
+            )
+
+            id_data = jsona.return_json().get('data')
+
+        hash_obj = hashlib.sha256(params.get('id', '').encode())
+        hash_obj.update(params.get('secret', '').encode())
+
+        token = hashlib.sha256(
+            request.headers.get('token').encode()
+        ).hexdigest()
+
+        error = None
+
+        if not id_data:
+            error = 'No data for this id'
+
+        elif id_data.get('secret') != hash_obj.hexdigest():
+            error = 'Secret is not correct'
+
+        elif id_data.get('token') != token:
+            error = 'Token is not correct'
+
+        if not error:
+            os.remove(
+                os.path.join(
+                    settings.FOLDER_QUEUE, '%s.json' % (params["id"])
+                )
+            )
+
+        return await response_wrapper(
+            data = {
+                'success': True,
+            } if not error else {
+                'success': False,
+                'error': error,
+            }
+        )
+    
     result = {"success": False}
 
     try:
-        reqexe = RequestExecuter(request = request, get = get_requests, post = post_requests)
+        reqexe = RequestExecuter(
+            request = request, 
+            get = get_requests, 
+            post = post_requests, 
+            delete = delete_requests,
+        )
         
         result = await reqexe.execute()
     except Exception as e:
