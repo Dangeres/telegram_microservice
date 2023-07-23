@@ -182,7 +182,7 @@ async def message(request):
         hash_obj.update(params.get('secret', '').encode())
 
         token = hashlib.sha256(
-            request.headers.get('token').encode()
+            request.headers.get('token', '').encode()
         ).hexdigest()
         
         if not id_data:
@@ -223,7 +223,7 @@ async def message(request):
 
             id_data = jsona.return_json().get('data')
 
-        hash_obj = hashlib.sha256(params.get('id', '').encode())
+        hash_obj = hashlib.sha256(id_data.get('id', '').encode())
         hash_obj.update(params.get('secret', '').encode())
 
         token = hashlib.sha256(
