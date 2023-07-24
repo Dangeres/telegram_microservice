@@ -1,4 +1,5 @@
 asgiref==3.7.2
+asyncpg==0.28.0
 cryptg==0.4.0
 Django==4.2.3
 gunicorn==20.1.0
