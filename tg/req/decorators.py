@@ -1,6 +1,6 @@
 import functools
 
-from .database import DataBase
+from req.database import DataBase
 from django.http import HttpResponse
 
 import hashlib

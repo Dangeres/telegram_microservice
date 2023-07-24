@@ -1,13 +1,13 @@
 from django.http import HttpResponse
 
-from .utils.request_executer import RequestExecuter
-from .utils import jsona as jsn
-from .decorators import access
+from req.utils.request_executer import RequestExecuter
+from req.utils import jsona as jsn
+from req.decorators import access
 from uuid import uuid4
 
 import tg.settings as settings
 
-from .database import DataBase
+from req.database import DataBase
 
 import datetime
 import functools
