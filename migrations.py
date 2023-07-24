@@ -42,7 +42,7 @@ async def run_migrations(dsn=None, db_config=None):
 
             values = (
                 int(migration.split('.')[0].split('_')[0]),
-                migration,
+                migration.rsplit('.', 1)[0],
             )
             
             await connection.execute(
