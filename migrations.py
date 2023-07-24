@@ -39,10 +39,20 @@ async def run_migrations(dsn=None, db_config=None):
         async with connection.transaction():
             with open(f'{FOLDER_MIGRATIONS}{migration}') as migration_file:
                 await connection.execute(migration_file.read())
+            
+            version = migration.rsplit('.', 1)[0].split('_', 1)
+            name = migration.rsplit('.', 1)[0]
+
+            if len(version) == 2:
+                version = int(version[0])
+            else:
+                logging.error('{migration} has no migration id')
+
+                return
 
             values = (
-                int(migration.split('.')[0].split('_')[0]),
-                migration.rsplit('.', 1)[0],
+                version,
+                name,
             )
             
             await connection.execute(
