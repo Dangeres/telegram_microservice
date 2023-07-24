@@ -17,7 +17,7 @@ def access(func):
         request = args[0]
 
         token = hashlib.sha256(
-            request.headers.get('token').encode()
+            request.headers.get('token', '').encode()
         ).hexdigest()
 
         db = DataBase()
