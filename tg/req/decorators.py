@@ -1,9 +1,7 @@
 import functools
 
-from req.database import DataBase
+from .database import DataBase
 from django.http import HttpResponse
-
-import tg.settings as settings
 
 import hashlib
 import datetime
