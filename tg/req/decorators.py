@@ -1,12 +1,12 @@
 import functools
 
-from .utils import jsona as jsn
+from req.database import DataBase
 from django.http import HttpResponse
 
 import tg.settings as settings
 
 import hashlib
-import time
+import datetime
 import json
 
 
@@ -20,14 +20,23 @@ def access(func):
             request.headers.get('token').encode()
         ).hexdigest()
 
-        jsona = jsn.Jsona(
-            path_file=settings.FOLDER_TOKENS,
-            name_file=f'{token}.json',
-        )
-        
-        data = jsona.return_json().get('data', {}) if token else {}
+        db = DataBase()
 
-        if data.get('untill_time', 0) < int(time.time()):
+        connect = await db.create_connect()
+
+        query = """
+select id, untill_dt from tokens where id = $1;
+"""
+        args_query = (
+            token,
+        )
+
+        data = await connect.fetchrow(
+            query,
+            *args_query
+        )
+
+        if not data or (data['untill_dt'] < datetime.datetime.now()):
             return HttpResponse(
                 json.dumps({
                     'success': False,

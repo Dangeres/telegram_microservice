@@ -1,12 +1,15 @@
 from django.http import HttpResponse
 
-from .utils.request_executer import RequestExecuter
-from .utils import jsona as jsn
-from .decorators import access
+from req.utils.request_executer import RequestExecuter
+from req.utils import jsona as jsn
+from req.decorators import access
 from uuid import uuid4
 
 import tg.settings as settings
 
+from req.database import DataBase
+
+import datetime
 import functools
 import hashlib
 import secrets
@@ -350,31 +353,35 @@ async def user(request):
     async def post_requests(params, *args, **kwargs):
         params = params.get('data', {})
 
-        while True:
-            token = str(uuid4())
+        token = str(uuid4())
 
-            hashed_token = hashlib.sha256(
-                token.encode()
-            ).hexdigest()
+        hashed_token = hashlib.sha256(
+            token.encode()
+        ).hexdigest()
 
-            jsona = jsn.Jsona(
-                path_file = settings.FOLDER_TOKENS,
-                name_file = f'{hashed_token}.json',
-            )
+        query = """insert into tokens(id, create_dt, untill_dt) 
+values ($1, $2, $3)
+on conflict (id) do update set
+untill_dt = excluded.untill_dt
+returning *;"""
 
-            if not jsona.return_json().get('success'):
-                result = jsona.save_json(
-                    data = {
-                        'untill_time': int(time.time()) + 31 * 24 * 60 * 60,
-                    }
-                )
+        args_query = (
+            hashed_token,
+            datetime.datetime.now(),
+            datetime.datetime.now() + datetime.timedelta(days = 31),
+        )
 
-                if result.get('success'):
-                    break
+        db = DataBase()
+        connect = await db.create_connect()
+
+        result = await connect.fetchrow(
+            query,
+            *args_query,
+        )
 
         return {
             'success': True,
-            'token': token,
+            'token': result['id'],
         }
 
 

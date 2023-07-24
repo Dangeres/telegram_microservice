@@ -23,14 +23,11 @@ FOLDER_ERRORS = os.path.join(BASE_DIR.parent, 'errors')
 
 FOLDER_DOWNLOADS = os.path.join(BASE_DIR.parent, 'downloads')
 
-FOLDER_TOKENS = os.path.join(BASE_DIR.parent, 'tokens')
-
 
 for folder in [
     FOLDER_QUEUE,
     FOLDER_ERRORS,
     FOLDER_DOWNLOADS,
-    FOLDER_TOKENS,
 ]:
     os.makedirs(
         name = folder,
@@ -42,6 +39,8 @@ for folder in [
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 settings = jsn.Jsona(BASE_DIR, 'settings.json').return_json().get('data', {})
+
+settings_database = jsn.Jsona(BASE_DIR.parent, 'settings_database.json').return_json().get('data', {})
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = settings.get('secret_key', '')
