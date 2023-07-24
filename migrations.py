@@ -41,7 +41,7 @@ async def run_migrations(dsn=None, db_config=None):
                 await connection.execute(migration_file.read())
             
             version = migration.rsplit('.', 1)[0].split('_', 1)
-            name = migration.rsplit('.', 1)[0]
+            name = migration
 
             if len(version) == 2:
                 version = int(version[0])
