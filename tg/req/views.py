@@ -46,7 +46,11 @@ async def ping(request):
     }
 
     try:
-        reqexe = RequestExecuter(request = request, get = get_requests, post = post_requests)
+        reqexe = RequestExecuter(
+            request = request,
+            get = get_requests,
+            post = post_requests,
+        )
         
         result = await reqexe.execute()
     except Exception as e:
@@ -73,7 +77,10 @@ async def queue(request):
     result = {"success": False}
 
     try:
-        reqexe = RequestExecuter(request = request, get = get_requests)
+        reqexe = RequestExecuter(
+            request = request,
+            get = get_requests,
+        )
         
         result = await reqexe.execute()
     except Exception as e:
@@ -331,7 +338,11 @@ async def file(request):
     result = {"success": False}
 
     try:
-        reqexe = RequestExecuter(request = request, get = get_requests, post = post_requests)
+        reqexe = RequestExecuter(
+            request = request,
+            get = get_requests,
+            post = post_requests,
+        )
         
         result = await reqexe.execute()
     except Exception as e:
@@ -397,7 +408,11 @@ returning *;"""
     result = {"success": False}
 
     try:
-        reqexe = RequestExecuter(request = request, get = get_requests, post = post_requests)
+        reqexe = RequestExecuter(
+            request = request,
+            get = get_requests,
+            post = post_requests,
+        )
         
         result = await reqexe.execute()
     except Exception as e:
