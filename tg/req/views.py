@@ -158,6 +158,44 @@ async def message(request):
                 'error': f'File {params["file"]} doesn\'t exist'
             }
 
+#         query = """
+# insert into message_secret(token, secret) values ($1, $2);
+# """
+
+#         db = DataBase()
+
+#         connect = db.create_connect()
+
+#         args_query = (
+#             token,
+#             hash_obj.hexdigest(),
+#             datetime.datetime.now(),
+#         )
+
+#         result_db = await connect.fetchrow(
+#             query,
+#             *args_query,
+#         )
+
+#         result_queue = jsona.save_json(data = params).get('success')
+
+#         result = {
+#             'success': False
+#         }
+
+#         if result_queue and result_db:
+#             result = {
+#                 'success': True,
+#                 'id': params['id'],
+#                 'secret': secret,
+#             }
+
+#         elif result_queue and not result_db:
+#             try:
+#                 os.remove()
+#             except Exception as e:
+#                 pass
+        
         result = {
             'success': jsona.save_json(data = params).get('success'),
         }

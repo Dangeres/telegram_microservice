@@ -18,3 +18,4 @@ tokens/
 # CUSTOM FILES
 settings*.json
 db.sqlite3
+test*
