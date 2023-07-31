@@ -10,9 +10,11 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
-from pathlib import Path
+
 import os
-from req.utils import jsona as jsn
+
+from pathlib import Path
+from req.utils.jsona import Jsona
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -38,9 +40,10 @@ for folder in [
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
-settings = jsn.Jsona(BASE_DIR, 'settings.json').return_json().get('data', {})
+settings = Jsona(BASE_DIR, 'settings.json').return_json().get('data', {})
 
-settings_database = jsn.Jsona(BASE_DIR.parent, 'settings_database.json').return_json().get('data', {})
+settings_database = Jsona(BASE_DIR.parent, 'settings_database.json').return_json().get('data', {})
+settings_rabbitmq = Jsona(BASE_DIR.parent, 'settings_rabbitmq.json').return_json().get('data', {})
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = settings.get('secret_key', '')

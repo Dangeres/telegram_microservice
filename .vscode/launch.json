@@ -10,6 +10,8 @@
             "request": "launch",
             // "program": "${workspaceFolder}/sender/sender.py",
             // "program": "${workspaceFolder}/migrations.py",
+            // "program": "${workspaceFolder}/test_publisher.py",
+            // "program": "${workspaceFolder}/test_consumer.py",
             "program": "${workspaceFolder}/tg/manage.py",
             "args": [
                 "runserver",

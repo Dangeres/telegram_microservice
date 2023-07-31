@@ -3,6 +3,7 @@ asyncpg==0.28.0
 cryptg==0.4.0
 Django==4.2.3
 gunicorn==20.1.0
+pika==1.3.2
 pyaes==1.6.1
 pyasn1==0.5.0
 rsa==4.9
