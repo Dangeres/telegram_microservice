@@ -117,9 +117,11 @@ async def message(request):
 
         params = params.get('data', {})
 
+        message_id = str(uuid4())
+
         secret = secrets.token_urlsafe()
 
-        secret_hash = hashlib.sha256(params.get('id', '').encode())
+        secret_hash = hashlib.sha256(message_id.encode())
         secret_hash.update(secret.encode())
 
         token = hashlib.sha256(
@@ -150,7 +152,7 @@ async def message(request):
         
 
         build_message = {
-            'id': str(uuid4()),
+            'id': message_id,
             'token': token,
             'secret': secret_hash.hexdigest(),
             'time': int(time.time()),
@@ -222,23 +224,39 @@ returning *;
 
 
     async def get_requests(params, *args, **kwargs):
-        restrict_fields = [
-            'secret',
-            'token',
-        ]
-
         params = params.get('data', {})
 
-        id_data = None
+        query = """
+with finded_result as (
+	select * from message_result where id = $1
+),
+finded_secret as (
+	select * from message_secret where id = $1
+)
+select
+fr.id,
+fr.dt,
+fr.message_id,
+fr.sender,
+fr.error,
+fs.token_service,
+fs.secret
+from finded_secret fs inner join finded_result fr on fr.id = fs.id;
+"""
+
+        db = DataBase()
+        connect = await db.create_connect()
+
+        args_query = (
+            params.get('id', ''),
+        )
+
+        id_data = await connect.fetchrow(
+            query,
+            *args_query,
+        )
+
         error = None
-
-        if params.get('id'):
-            jsona = jsn.Jsona(
-                path_file=settings.FOLDER_QUEUE, 
-                name_file='%s.json' % (params["id"]),
-            )
-
-            id_data = jsona.return_json().get('data')
 
         hash_obj = hashlib.sha256(params.get('id', '').encode())
         hash_obj.update(params.get('secret', '').encode())
@@ -248,27 +266,29 @@ returning *;
         ).hexdigest()
         
         if not id_data:
-            error = 'No data for this id'
+            error = 'No data for this id yet'
         
         elif id_data.get('secret') != hash_obj.hexdigest():
             error = 'Secret is not correct'
             id_data = None
 
-        elif id_data.get('token') != token:
+        elif id_data.get('token_service') != token:
             error = 'Token is not correct'
             id_data = None
 
-        if id_data:
-            for key in restrict_fields:
-                id_data.pop(key, None)
+        result = {
+            'id': id_data['id'],
+            'message_id': id_data['message_id'],
+            'sender': id_data['sender'],
+            'error': id_data['error'],
+        }
 
         return await response_wrapper(
             data = {
                 'success': True,
-                'data': id_data,
+                'data': result,
             } if not error else {
                 'success': False,
-                'data': id_data,
                 'error': error,
             }
         )
