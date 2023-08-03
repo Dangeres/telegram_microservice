@@ -1,9 +1,10 @@
-from utils import jsona as jsn
+from utils.jsona import Jsona
 from pathlib import Path
 import os
 
 import asyncio
-import functools
+import asyncpg
+import datetime
 import json
 import pika
 import time
@@ -27,7 +28,7 @@ async def ticker(app):
             if not file.endswith('.json'):
                 continue
 
-            jsona = jsn.Jsona(FOLDER_QUEUE, file)
+            jsona = Jsona(FOLDER_QUEUE, file)
 
             data = jsona.return_json().get('data', {})
 
@@ -84,7 +85,7 @@ async def ticker(app):
                     data=data,
                 )
 
-                jsona_error = jsn.Jsona(FOLDER_ERRORS, f'{int(time.time())}.json')
+                jsona_error = Jsona(FOLDER_ERRORS, f'{int(time.time())}.json')
 
                 jsona_error.save_json(
                     data = {
@@ -170,17 +171,26 @@ async def send_message(
     return {
         "success": True,
         "message_id": result.id if result else None,
+        "sender": result.chat_id,
         "dt": int(time.time()),
     }
 
 
 async def main():
-    jsona = jsn.Jsona(name_file='settings.json', path_file=BASE_DIR / 'sender')
+    jsona = Jsona(path_file=BASE_DIR / 'sender', name_file='settings.json')
     login_data = jsona.return_json().get('data', {})
 
-    jsona = jsn.Jsona(path_file=BASE_DIR, name_file='settings_rabbitmq.json')
+    jsona = Jsona(path_file=BASE_DIR, name_file='settings_rabbitmq.json')
     rabbit_config = jsona.return_json().get('data', {})
 
+    jsona = Jsona(path_file=BASE_DIR, name_file='settings_database.json')
+    settings_database = jsona.return_json().get('data', {})
+
+    pg: asyncpg.Connection = await asyncpg.connect(
+        dsn = 'postgres://{user}:{password}@{host}:{port}/{database}'.format(
+            **settings_database
+        )
+    )
 
     app = TelegramClient(
         session = str(
@@ -229,6 +239,28 @@ async def main():
                 )
 
                 if result.get('success'):
+                    args_query = (
+                        data['id'],
+                        result['message_id'],
+                        result['sender'],
+                        None,
+                        datetime.datetime.now(),
+                    )
+
+                    result = await pg.fetchrow(
+                        """
+insert into message_result (id, message_id, sender, error, dt)
+values ($1, $2, $3, $4, $5)
+on conflict (id) do update set
+message_id = excluded.message_id,
+sender = excluded.sender,
+error = excluded.error,
+dt = excluded.dt
+returning *;
+""",
+                        *args_query,
+                    )
+
                     print(f'success sended {data}')
 
                 elif result.get('code') in [

@@ -13,6 +13,7 @@ import datetime
 import functools
 import hashlib
 import secrets
+import pika
 import json
 import time
 import os
@@ -116,25 +117,14 @@ async def message(request):
 
         params = params.get('data', {})
 
-        params['id'] = str(uuid4())
-
-        jsona = jsn.Jsona(
-            path_file=settings.FOLDER_QUEUE, 
-            name_file='%s.json' % (params["id"]),
-        )
-
         secret = secrets.token_urlsafe()
 
-        hash_obj = hashlib.sha256(params.get('id', '').encode())
-        hash_obj.update(secret.encode())
+        secret_hash = hashlib.sha256(params.get('id', '').encode())
+        secret_hash.update(secret.encode())
 
         token = hashlib.sha256(
             request.headers.get('token').encode()
         ).hexdigest()
-
-        params['secret'] = hash_obj.hexdigest()
-        params['time'] = int(time.time())
-        params['token'] = token
 
         if not (
             params.get('sender') and 
@@ -157,52 +147,76 @@ async def message(request):
                 'success': False,
                 'error': f'File {params["file"]} doesn\'t exist'
             }
-
-#         query = """
-# insert into message_secret(token, secret) values ($1, $2);
-# """
-
-#         db = DataBase()
-
-#         connect = db.create_connect()
-
-#         args_query = (
-#             token,
-#             hash_obj.hexdigest(),
-#             datetime.datetime.now(),
-#         )
-
-#         result_db = await connect.fetchrow(
-#             query,
-#             *args_query,
-#         )
-
-#         result_queue = jsona.save_json(data = params).get('success')
-
-#         result = {
-#             'success': False
-#         }
-
-#         if result_queue and result_db:
-#             result = {
-#                 'success': True,
-#                 'id': params['id'],
-#                 'secret': secret,
-#             }
-
-#         elif result_queue and not result_db:
-#             try:
-#                 os.remove()
-#             except Exception as e:
-#                 pass
         
-        result = {
-            'success': jsona.save_json(data = params).get('success'),
+
+        build_message = {
+            'id': str(uuid4()),
+            'token': token,
+            'secret': secret_hash.hexdigest(),
+            'time': int(time.time()),
+            'sender': params.get('sender'),
+            'text': params.get('text', None),
+            'file': params.get('file', None),
+            'reply_to': params.get('reply_to', None),
+            'preview': params.get('preview', True),
+            'force_document': params.get('force_document', False),
         }
 
-        if result.get('success'):
-            result['id'] = params['id']
-            result['secret'] = secret
+        query = """
+insert into message_secret(id, secret, token_service, dt) values ($1, $2, $3, $4)
+on conflict (id) do update set
+token_service = excluded.token_service,
+secret = excluded.secret,
+dt = excluded.dt
+returning *;
+"""
+
+        db = DataBase()
+        connect = await db.create_connect()
+
+        args_query = (
+            build_message['id'],
+            build_message['secret'],
+            build_message['token'],
+            datetime.datetime.now(),
+        )
+
+        result_db = await connect.fetchrow(
+            query,
+            *args_query,
+        )
+
+        if not result_db:
+            return {
+                'success': False,
+                'error': 'Unknown error',
+            }
+
+        connection = pika.BlockingConnection(
+            parameters = pika.URLParameters(
+                'amqp://{user}:{password}@{host}:{port}/%2F'.format(
+                    **settings.settings_rabbitmq
+                )
+            )
+        )
+
+        channel = connection.channel()
+
+        channel.basic_publish(
+            exchange = 'message',
+            routing_key = 'message',
+            body = json.dumps(
+                obj = build_message,
+            ),
+        )
+
+        connection.close()
+        
+        result = {
+            'success': True,
+            'id': build_message['id'],
+            'secret': secret,
+        }
 
         return result
 
@@ -260,51 +274,6 @@ async def message(request):
         )
     
 
-    async def delete_requests(params, *args, **kwargs):
-        params = params.get('data', {})
-
-        if params.get('id'):
-            jsona = jsn.Jsona(
-                path_file=settings.FOLDER_QUEUE, 
-                name_file='%s.json' % (params["id"]),
-            )
-
-            id_data = jsona.return_json().get('data')
-
-        hash_obj = hashlib.sha256(id_data.get('id', '').encode())
-        hash_obj.update(params.get('secret', '').encode())
-
-        token = hashlib.sha256(
-            request.headers.get('token').encode()
-        ).hexdigest()
-
-        error = None
-
-        if not id_data:
-            error = 'No data for this id'
-
-        elif id_data.get('secret') != hash_obj.hexdigest():
-            error = 'Secret is not correct'
-
-        elif id_data.get('token') != token:
-            error = 'Token is not correct'
-
-        if not error:
-            os.remove(
-                os.path.join(
-                    settings.FOLDER_QUEUE, '%s.json' % (params["id"])
-                )
-            )
-
-        return await response_wrapper(
-            data = {
-                'success': True,
-            } if not error else {
-                'success': False,
-                'error': error,
-            }
-        )
-    
     result = {"success": False}
 
     try:
@@ -312,7 +281,6 @@ async def message(request):
             request = request, 
             get = get_requests, 
             post = post_requests, 
-            delete = delete_requests,
         )
         
         result = await reqexe.execute()

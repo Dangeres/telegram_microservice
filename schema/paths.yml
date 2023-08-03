@@ -74,26 +74,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/MessagePostResponse'
 
-    delete:
-      parameters:
-        - $ref: "#/components/parameters/Token"
-      
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/MessageDelete'
-        
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/StandartResponse"
-  
-
   /file:
     get:
       parameters:
