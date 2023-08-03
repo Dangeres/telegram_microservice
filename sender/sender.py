@@ -165,7 +165,7 @@ async def send_message(
         return {
             "success": False,
             "code": "error.unknown",
-            "error": type(e),
+            "error": str(e),
         }
 
     return {
@@ -247,7 +247,7 @@ async def main():
                         datetime.datetime.now(),
                     )
 
-                    result = await pg.fetchrow(
+                    result_database = await pg.fetchrow(
                         """
 insert into message_result (id, message_id, sender, error, dt)
 values ($1, $2, $3, $4, $5)
@@ -278,6 +278,28 @@ returning *;
                     )
 
                 else:
+                    args_query = (
+                        data['id'],
+                        result.get('message_id'),
+                        result.get('sender'),
+                        result.get('error'),
+                        datetime.datetime.now(),
+                    )
+
+                    result_database = await pg.fetchrow(
+                        """
+insert into message_result (id, message_id, sender, error, dt)
+values ($1, $2, $3, $4, $5)
+on conflict (id) do update set
+message_id = excluded.message_id,
+sender = excluded.sender,
+error = excluded.error,
+dt = excluded.dt
+returning *;
+""",
+                        *args_query,
+                    )
+
                     print(f'Unknown error is {result}')
 
                 channel.basic_ack(method_frame.delivery_tag)

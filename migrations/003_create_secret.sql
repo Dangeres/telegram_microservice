@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS message_result
 (
     id TEXT PRIMARY KEY NOT NULL,
     message_id integer,
-    sender integer NOT NULL,
+    sender integer,
     error TEXT,
     dt timestamp
 );
