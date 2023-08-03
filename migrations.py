@@ -64,10 +64,6 @@ async def run_migrations(dsn=None, db_config=None):
 
 
 if __name__ == '__main__':
-    loop = asyncio.get_event_loop()
-
-    loop.run_until_complete(
-        asyncio.ensure_future(
-            run_migrations()
-        )
+    asyncio.run(
+        run_migrations()
     )
