@@ -1,7 +1,8 @@
 from django.http import HttpResponse
 
 from req.utils.request_executer import RequestExecuter
-from req.utils import jsona as jsn
+from req.utils.jsona import Jsona
+from req.utils import rabbitmq
 from req.decorators import access
 from uuid import uuid4
 
@@ -165,9 +166,11 @@ returning *;
 
         channel = connection.channel()
 
+        rabbitmq.init(channel)
+
         channel.basic_publish(
-            exchange = 'message',
-            routing_key = 'message',
+            exchange = settings.rabbitmq.exchange_name,
+            routing_key = settings.rabbitmq.routing_key,
             body = json.dumps(
                 obj = build_message,
             ),
@@ -237,17 +240,15 @@ from finded_secret fs inner join finded_result fr on fr.id = fs.id;
             error = 'Token is not correct'
             id_data = None
 
-        result = {
-            'id': id_data['id'],
-            'message_id': id_data['message_id'],
-            'sender': id_data['sender'],
-            'error': id_data['error'],
-        }
-
         return await response_wrapper(
             data = {
                 'success': True,
-                'data': result,
+                'data': {
+                    'id': id_data['id'],
+                    'message_id': id_data['message_id'],
+                    'sender': id_data['sender'],
+                    'error': id_data['error'],
+                },
             } if not error else {
                 'success': False,
                 'error': error,
@@ -268,7 +269,7 @@ from finded_secret fs inner join finded_result fr on fr.id = fs.id;
     except Exception as e:
         print(e)
 
-        jsona = jsn.Jsona(settings.FOLDER_ERRORS, f'{int(time.time())}.json')
+        jsona = Jsona(settings.FOLDER_ERRORS, f'{int(time.time())}.json')
 
         jsona.save_json(
             data = {
@@ -335,7 +336,7 @@ async def file(request):
     except Exception as e:
         print(e)
 
-        jsona = jsn.Jsona(settings.FOLDER_ERRORS, f'{int(time.time())}.json')
+        jsona = Jsona(settings.FOLDER_ERRORS, f'{int(time.time())}.json')
 
         jsona.save_json(
             data = {
@@ -405,7 +406,7 @@ returning *;"""
     except Exception as e:
         print(e)
 
-        jsona = jsn.Jsona(settings.FOLDER_ERRORS, f'{int(time.time())}.json')
+        jsona = Jsona(settings.FOLDER_ERRORS, f'{int(time.time())}.json')
 
         jsona.save_json(
             data = {

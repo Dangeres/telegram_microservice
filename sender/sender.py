@@ -1,4 +1,5 @@
 from utils.jsona import Jsona
+from utils import rabbitmq
 from pathlib import Path
 import os
 
@@ -215,13 +216,14 @@ async def main():
 
     channel = connection.channel()
 
+    rabbitmq.init(channel)
 
     async def create_consumer():
         print('[X] Created consumer')
 
         while True:
             method_frame, header_frame, body = channel.basic_get(
-                queue = 'message',
+                queue = rabbitmq.rabbitmq.queue_name,
                 auto_ack = False,
             )
 
@@ -270,8 +272,8 @@ returning *;
                     data['send_time'] = result.get('dt', int(time.time()))
 
                     channel.basic_publish(
-                        exchange = 'message',
-                        routing_key = 'message',
+                        exchange = rabbitmq.rabbitmq.exchange_name,
+                        routing_key = rabbitmq.rabbitmq.routing_key,
                         body = json.dumps(
                             obj = data,
                         ),
