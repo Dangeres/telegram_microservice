@@ -233,7 +233,7 @@ async def main():
                 except json.decoder.JSONDecodeError:
                     data = body
 
-                print(f" [x] Received {data}")
+                # print(f" [x] Received {data}")
 
                 result = await send_message(
                     app = app,
@@ -263,7 +263,7 @@ returning *;
                         *args_query,
                     )
 
-                    print(f'success sended {data}')
+                    # print(f'success sended {data}')
 
                 elif result.get('code') in [
                     'error.send_time_retry',
@@ -307,7 +307,7 @@ returning *;
                 channel.basic_ack(method_frame.delivery_tag)
             
             else:
-                print('[A] AWAIT')
+                # print('[A] AWAIT')
 
                 await asyncio.sleep(1)
 
