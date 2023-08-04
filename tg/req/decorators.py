@@ -1,8 +1,9 @@
 import functools
 
-from req.database import DataBase
 from django.http import HttpResponse
+from tg.settings import settings_database_dsn
 
+import asyncpg
 import hashlib
 import datetime
 import json
@@ -18,21 +19,21 @@ def access(func):
             request.headers.get('token', '').encode()
         ).hexdigest()
 
-        db = DataBase()
-
-        connect = await db.create_connect()
-
-        query = """
+        async with asyncpg.create_pool(
+            dsn = settings_database_dsn,
+        ) as pool:
+            async with pool.acquire() as connect:
+                query = """
 select id, untill_dt from tokens where id = $1;
 """
-        args_query = (
-            token,
-        )
+                args_query = (
+                    token,
+                )
 
-        data = await connect.fetchrow(
-            query,
-            *args_query
-        )
+                data = await connect.fetchrow(
+                    query,
+                    *args_query
+                )
 
         if not data or (data['untill_dt'] < datetime.datetime.now()):
             return HttpResponse(

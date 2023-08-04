@@ -7,8 +7,9 @@ from req.decorators import access
 from uuid import uuid4
 
 import tg.settings as settings
+from tg.settings import settings_database_dsn
 
-from req.database import DataBase
+import asyncpg
 
 import datetime
 import functools
@@ -135,20 +136,21 @@ dt = excluded.dt
 returning *;
 """
 
-        db = DataBase()
-        connect = await db.create_connect()
+        async with asyncpg.create_pool(
+            dsn = settings_database_dsn,
+        ) as pool:
+            async with pool.acquire() as connect:
+                args_query = (
+                    build_message['id'],
+                    build_message['secret'],
+                    build_message['token'],
+                    datetime.datetime.now(),
+                )
 
-        args_query = (
-            build_message['id'],
-            build_message['secret'],
-            build_message['token'],
-            datetime.datetime.now(),
-        )
-
-        result_db = await connect.fetchrow(
-            query,
-            *args_query,
-        )
+                result_db = await connect.fetchrow(
+                    query,
+                    *args_query,
+                )
 
         if not result_db:
             return {
@@ -208,17 +210,19 @@ fs.secret
 from finded_secret fs inner join finded_result fr on fr.id = fs.id;
 """
 
-        db = DataBase()
-        connect = await db.create_connect()
+        async with asyncpg.create_pool(
+            dsn = settings_database_dsn,
+        ) as pool:
+            async with pool.acquire() as connect:
 
-        args_query = (
-            params.get('id', ''),
-        )
+                args_query = (
+                    params.get('id', ''),
+                )
 
-        id_data = await connect.fetchrow(
-            query,
-            *args_query,
-        )
+                id_data = await connect.fetchrow(
+                    query,
+                    *args_query,
+                )
 
         error = None
 
@@ -370,13 +374,14 @@ returning *;"""
             datetime.datetime.now() + datetime.timedelta(days = 31),
         )
 
-        db = DataBase()
-        connect = await db.create_connect()
-
-        result = await connect.fetchrow(
-            query,
-            *args_query,
-        )
+        async with asyncpg.create_pool(
+            dsn = settings_database_dsn,
+        ) as pool:
+            async with pool.acquire() as connect:
+                result = await connect.fetchrow(
+                    query,
+                    *args_query,
+                )
 
         return {
             'success': True,

@@ -187,10 +187,8 @@ async def main():
     jsona = Jsona(path_file=BASE_DIR, name_file='settings_database.json')
     settings_database = jsona.return_json().get('data', {})
 
-    pg: asyncpg.Connection = await asyncpg.connect(
-        dsn = 'postgres://{user}:{password}@{host}:{port}/{database}'.format(
-            **settings_database
-        )
+    pg_dsn = 'postgres://{user}:{password}@{host}:{port}/{database}'.format(
+        **settings_database
     )
 
     app = TelegramClient(
@@ -249,8 +247,7 @@ async def main():
                         datetime.datetime.now(),
                     )
 
-                    result_database = await pg.fetchrow(
-                        """
+                    query = """
 insert into message_result (id, message_id, sender, error, dt)
 values ($1, $2, $3, $4, $5)
 on conflict (id) do update set
@@ -259,9 +256,15 @@ sender = excluded.sender,
 error = excluded.error,
 dt = excluded.dt
 returning *;
-""",
-                        *args_query,
-                    )
+"""
+                    async with asyncpg.create_pool(
+                        dsn = pg_dsn,
+                    ) as pg_pool:
+                        async with pg_pool.acquire() as connect:
+                            result_database = await connect.fetchrow(
+                                query,
+                                *args_query,
+                            )
 
                     # print(f'success sended {data}')
 
@@ -288,8 +291,7 @@ returning *;
                         datetime.datetime.now(),
                     )
 
-                    result_database = await pg.fetchrow(
-                        """
+                    query = """
 insert into message_result (id, message_id, sender, error, dt)
 values ($1, $2, $3, $4, $5)
 on conflict (id) do update set
@@ -298,9 +300,15 @@ sender = excluded.sender,
 error = excluded.error,
 dt = excluded.dt
 returning *;
-""",
-                        *args_query,
-                    )
+"""
+                    async with asyncpg.create_pool(
+                        dsn = pg_dsn,
+                    ) as pg_pool:
+                        async with pg_pool.acquire() as connect:
+                            result_database = await connect.fetchrow(
+                                query,
+                                *args_query,
+                            )
 
                     print(f'Unknown error is {result}')
 

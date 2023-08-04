@@ -45,6 +45,10 @@ settings = Jsona(BASE_DIR, 'settings.json').return_json().get('data', {})
 settings_database = Jsona(BASE_DIR.parent, 'settings_database.json').return_json().get('data', {})
 settings_rabbitmq = Jsona(BASE_DIR.parent, 'settings_rabbitmq.json').return_json().get('data', {})
 
+settings_database_dsn = 'postgres://{user}:{password}@{host}:{port}/{database}'.format(
+    **settings_database
+)
+
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = settings.get('secret_key', '')
 
