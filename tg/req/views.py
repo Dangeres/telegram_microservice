@@ -60,45 +60,6 @@ async def ping(request):
     return await response_wrapper(result)
 
 
-async def queue(request):
-    async def get_requests(params, *args, **kwargs):
-        params = params.get('data', {})
-
-        return await response_wrapper(
-            data = {
-                'data': list(
-                    map(
-                        lambda x: x.replace('.json', ''), 
-                        os.listdir(settings.FOLDER_QUEUE)
-                    )
-                ),
-            }
-        )
-    
-    result = {"success": False}
-
-    try:
-        reqexe = RequestExecuter(
-            request = request,
-            get = get_requests,
-        )
-        
-        result = await reqexe.execute()
-    except Exception as e:
-        print(e)
-
-        jsona = jsn.Jsona(settings.FOLDER_ERRORS, f'{int(time.time())}.json')
-
-        jsona.save_json(
-            data = {
-                'error': str(type(e)),
-                'description': str(e),
-            }
-        )
-    
-    return await response_wrapper(result)
-
-
 @access
 async def message(request):
     def has_one_of_field(x, y):

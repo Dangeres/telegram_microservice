@@ -56,13 +56,6 @@ urlpatterns.extend(
 
 urlpatterns.extend(
     extend_path(
-        name = 'queue',
-        handler = views.queue,
-    )
-)
-
-urlpatterns.extend(
-    extend_path(
         name = 'user',
         handler = views.user,
     )

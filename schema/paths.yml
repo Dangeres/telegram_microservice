@@ -19,7 +19,6 @@ paths:
         '200':
           description: OK
 
-  
   /user:
     get:
       responses:
@@ -90,18 +89,8 @@ paths:
       responses:
         '200':
           description: OK
-  
-  /queue:
-    get:
-      responses:
-        '200':
-          description: OK
 
-    post:
-      responses:
-        '200':
-          description: OK
-          
+
 components:
   parameters:
     Token:
