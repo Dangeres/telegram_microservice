@@ -19,15 +19,12 @@ from req.utils.jsona import Jsona
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-FOLDER_QUEUE = os.path.join(BASE_DIR.parent, 'queue')
-
 FOLDER_ERRORS = os.path.join(BASE_DIR.parent, 'errors')
 
 FOLDER_DOWNLOADS = os.path.join(BASE_DIR.parent, 'downloads')
 
 
 for folder in [
-    FOLDER_QUEUE,
     FOLDER_ERRORS,
     FOLDER_DOWNLOADS,
 ]:
