@@ -19,7 +19,6 @@ paths:
         '200':
           description: OK
 
-  
   /user:
     get:
       responses:
@@ -74,26 +73,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/MessagePostResponse'
 
-    delete:
-      parameters:
-        - $ref: "#/components/parameters/Token"
-      
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/MessageDelete'
-        
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/StandartResponse"
-  
-
   /file:
     get:
       parameters:
@@ -110,18 +89,8 @@ paths:
       responses:
         '200':
           description: OK
-  
-  /queue:
-    get:
-      responses:
-        '200':
-          description: OK
 
-    post:
-      responses:
-        '200':
-          description: OK
-          
+
 components:
   parameters:
     Token:

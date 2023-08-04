@@ -55,6 +55,16 @@ DEBUG = settings.get('debug', False)
 ALLOWED_HOSTS = settings.get('allowed_hosts', [])
 
 
+class RabbitMQ:
+    def __init__(self) -> None:
+        self.queue_name = 'messages'
+        self.routing_key = 'message'
+        self.exchange_name = 'message_exchange'
+
+
+rabbitmq = RabbitMQ()
+
+
 # Application definition
 
 

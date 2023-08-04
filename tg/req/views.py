@@ -1,7 +1,8 @@
 from django.http import HttpResponse
 
 from req.utils.request_executer import RequestExecuter
-from req.utils import jsona as jsn
+from req.utils.jsona import Jsona
+from req.utils import rabbitmq
 from req.decorators import access
 from uuid import uuid4
 
@@ -13,6 +14,7 @@ import datetime
 import functools
 import hashlib
 import secrets
+import pika
 import json
 import time
 import os
@@ -59,45 +61,6 @@ async def ping(request):
     return await response_wrapper(result)
 
 
-async def queue(request):
-    async def get_requests(params, *args, **kwargs):
-        params = params.get('data', {})
-
-        return await response_wrapper(
-            data = {
-                'data': list(
-                    map(
-                        lambda x: x.replace('.json', ''), 
-                        os.listdir(settings.FOLDER_QUEUE)
-                    )
-                ),
-            }
-        )
-    
-    result = {"success": False}
-
-    try:
-        reqexe = RequestExecuter(
-            request = request,
-            get = get_requests,
-        )
-        
-        result = await reqexe.execute()
-    except Exception as e:
-        print(e)
-
-        jsona = jsn.Jsona(settings.FOLDER_ERRORS, f'{int(time.time())}.json')
-
-        jsona.save_json(
-            data = {
-                'error': str(type(e)),
-                'description': str(e),
-            }
-        )
-    
-    return await response_wrapper(result)
-
-
 @access
 async def message(request):
     def has_one_of_field(x, y):
@@ -116,25 +79,16 @@ async def message(request):
 
         params = params.get('data', {})
 
-        params['id'] = str(uuid4())
-
-        jsona = jsn.Jsona(
-            path_file=settings.FOLDER_QUEUE, 
-            name_file='%s.json' % (params["id"]),
-        )
+        message_id = str(uuid4())
 
         secret = secrets.token_urlsafe()
 
-        hash_obj = hashlib.sha256(params.get('id', '').encode())
-        hash_obj.update(secret.encode())
+        secret_hash = hashlib.sha256(message_id.encode())
+        secret_hash.update(secret.encode())
 
         token = hashlib.sha256(
             request.headers.get('token').encode()
         ).hexdigest()
-
-        params['secret'] = hash_obj.hexdigest()
-        params['time'] = int(time.time())
-        params['token'] = token
 
         if not (
             params.get('sender') and 
@@ -157,74 +111,116 @@ async def message(request):
                 'success': False,
                 'error': f'File {params["file"]} doesn\'t exist'
             }
-
-#         query = """
-# insert into message_secret(token, secret) values ($1, $2);
-# """
-
-#         db = DataBase()
-
-#         connect = db.create_connect()
-
-#         args_query = (
-#             token,
-#             hash_obj.hexdigest(),
-#             datetime.datetime.now(),
-#         )
-
-#         result_db = await connect.fetchrow(
-#             query,
-#             *args_query,
-#         )
-
-#         result_queue = jsona.save_json(data = params).get('success')
-
-#         result = {
-#             'success': False
-#         }
-
-#         if result_queue and result_db:
-#             result = {
-#                 'success': True,
-#                 'id': params['id'],
-#                 'secret': secret,
-#             }
-
-#         elif result_queue and not result_db:
-#             try:
-#                 os.remove()
-#             except Exception as e:
-#                 pass
         
-        result = {
-            'success': jsona.save_json(data = params).get('success'),
+
+        build_message = {
+            'id': message_id,
+            'token': token,
+            'secret': secret_hash.hexdigest(),
+            'time': int(time.time()),
+            'sender': params.get('sender'),
+            'text': params.get('text', None),
+            'file': params.get('file', None),
+            'reply_to': params.get('reply_to', None),
+            'preview': params.get('preview', True),
+            'force_document': params.get('force_document', False),
         }
 
-        if result.get('success'):
-            result['id'] = params['id']
-            result['secret'] = secret
+        query = """
+insert into message_secret(id, secret, token_service, dt) values ($1, $2, $3, $4)
+on conflict (id) do update set
+token_service = excluded.token_service,
+secret = excluded.secret,
+dt = excluded.dt
+returning *;
+"""
+
+        db = DataBase()
+        connect = await db.create_connect()
+
+        args_query = (
+            build_message['id'],
+            build_message['secret'],
+            build_message['token'],
+            datetime.datetime.now(),
+        )
+
+        result_db = await connect.fetchrow(
+            query,
+            *args_query,
+        )
+
+        if not result_db:
+            return {
+                'success': False,
+                'error': 'Unknown error',
+            }
+
+        connection = pika.BlockingConnection(
+            parameters = pika.URLParameters(
+                'amqp://{user}:{password}@{host}:{port}/%2F'.format(
+                    **settings.settings_rabbitmq
+                )
+            )
+        )
+
+        channel = connection.channel()
+
+        rabbitmq.init(channel)
+
+        channel.basic_publish(
+            exchange = settings.rabbitmq.exchange_name,
+            routing_key = settings.rabbitmq.routing_key,
+            body = json.dumps(
+                obj = build_message,
+            ),
+        )
+
+        connection.close()
+        
+        result = {
+            'success': True,
+            'id': build_message['id'],
+            'secret': secret,
+        }
 
         return result
 
 
     async def get_requests(params, *args, **kwargs):
-        restrict_fields = [
-            'secret',
-            'token',
-        ]
-
         params = params.get('data', {})
 
-        id_data = None
+        query = """
+with finded_result as (
+	select * from message_result where id = $1
+),
+finded_secret as (
+	select * from message_secret where id = $1
+)
+select
+fr.id,
+fr.dt,
+fr.message_id,
+fr.sender,
+fr.error,
+fs.token_service,
+fs.secret
+from finded_secret fs inner join finded_result fr on fr.id = fs.id;
+"""
+
+        db = DataBase()
+        connect = await db.create_connect()
+
+        args_query = (
+            params.get('id', ''),
+        )
+
+        id_data = await connect.fetchrow(
+            query,
+            *args_query,
+        )
+
         error = None
-
-        if params.get('id'):
-            jsona = jsn.Jsona(
-                path_file=settings.FOLDER_QUEUE, 
-                name_file='%s.json' % (params["id"]),
-            )
-
-            id_data = jsona.return_json().get('data')
 
         hash_obj = hashlib.sha256(params.get('id', '').encode())
         hash_obj.update(params.get('secret', '').encode())
@@ -234,77 +230,32 @@ async def message(request):
         ).hexdigest()
         
         if not id_data:
-            error = 'No data for this id'
+            error = 'No data for this id yet'
         
         elif id_data.get('secret') != hash_obj.hexdigest():
             error = 'Secret is not correct'
             id_data = None
 
-        elif id_data.get('token') != token:
+        elif id_data.get('token_service') != token:
             error = 'Token is not correct'
             id_data = None
 
-        if id_data:
-            for key in restrict_fields:
-                id_data.pop(key, None)
-
         return await response_wrapper(
             data = {
                 'success': True,
-                'data': id_data,
-            } if not error else {
-                'success': False,
-                'data': id_data,
-                'error': error,
-            }
-        )
-    
-
-    async def delete_requests(params, *args, **kwargs):
-        params = params.get('data', {})
-
-        if params.get('id'):
-            jsona = jsn.Jsona(
-                path_file=settings.FOLDER_QUEUE, 
-                name_file='%s.json' % (params["id"]),
-            )
-
-            id_data = jsona.return_json().get('data')
-
-        hash_obj = hashlib.sha256(id_data.get('id', '').encode())
-        hash_obj.update(params.get('secret', '').encode())
-
-        token = hashlib.sha256(
-            request.headers.get('token').encode()
-        ).hexdigest()
-
-        error = None
-
-        if not id_data:
-            error = 'No data for this id'
-
-        elif id_data.get('secret') != hash_obj.hexdigest():
-            error = 'Secret is not correct'
-
-        elif id_data.get('token') != token:
-            error = 'Token is not correct'
-
-        if not error:
-            os.remove(
-                os.path.join(
-                    settings.FOLDER_QUEUE, '%s.json' % (params["id"])
-                )
-            )
-
-        return await response_wrapper(
-            data = {
-                'success': True,
+                'data': {
+                    'id': id_data['id'],
+                    'message_id': id_data['message_id'],
+                    'sender': id_data['sender'],
+                    'error': id_data['error'],
+                },
             } if not error else {
                 'success': False,
                 'error': error,
             }
         )
     
+
     result = {"success": False}
 
     try:
@@ -312,14 +263,13 @@ async def message(request):
             request = request, 
             get = get_requests, 
             post = post_requests, 
-            delete = delete_requests,
         )
         
         result = await reqexe.execute()
     except Exception as e:
         print(e)
 
-        jsona = jsn.Jsona(settings.FOLDER_ERRORS, f'{int(time.time())}.json')
+        jsona = Jsona(settings.FOLDER_ERRORS, f'{int(time.time())}.json')
 
         jsona.save_json(
             data = {
@@ -386,7 +336,7 @@ async def file(request):
     except Exception as e:
         print(e)
 
-        jsona = jsn.Jsona(settings.FOLDER_ERRORS, f'{int(time.time())}.json')
+        jsona = Jsona(settings.FOLDER_ERRORS, f'{int(time.time())}.json')
 
         jsona.save_json(
             data = {
@@ -456,7 +406,7 @@ returning *;"""
     except Exception as e:
         print(e)
 
-        jsona = jsn.Jsona(settings.FOLDER_ERRORS, f'{int(time.time())}.json')
+        jsona = Jsona(settings.FOLDER_ERRORS, f'{int(time.time())}.json')
 
         jsona.save_json(
             data = {
