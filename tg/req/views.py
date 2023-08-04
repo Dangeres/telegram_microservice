@@ -122,7 +122,7 @@ async def message(request):
             'text': params.get('text', None),
             'file': params.get('file', None),
             'reply_to': params.get('reply_to', None),
-            'preview': params.get('preview', True),
+            'preview': params.get('preview', False),
             'force_document': params.get('force_document', False),
         }
 
