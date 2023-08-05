@@ -1,6 +1,6 @@
 import functools
 
-from django.http import HttpResponse
+from django.http import JsonResponse
 from tg.settings import settings_database_dsn
 
 import asyncpg
@@ -36,11 +36,12 @@ select id, untill_dt from tokens where id = $1;
                 )
 
         if not data or (data['untill_dt'] < datetime.datetime.now()):
-            return HttpResponse(
-                json.dumps({
+            return JsonResponse(
+                data = {
                     'success': False,
                     'error': 'access denied',
-                })
+                },
+                status = 403,
             )
 
         return await func(*args, **kwargs)

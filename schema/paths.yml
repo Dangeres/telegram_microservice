@@ -194,6 +194,10 @@ components:
           type: integer
           example: 16926501940
 
+        silent:
+          type: boolean
+          example: true
+
     StandartResponse:
       type: object
       additionalProperties: false

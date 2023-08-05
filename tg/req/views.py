@@ -1,4 +1,4 @@
-from django.http import HttpResponse
+from django.http import JsonResponse
 
 from req.utils.request_executer import RequestExecuter
 from req.utils.jsona import Jsona
@@ -21,27 +21,26 @@ import time
 import os
 
 
-async def response_wrapper(data) -> HttpResponse:
-    if type(data) == dict:
-        return HttpResponse(json.dumps(data))
-    
-    return HttpResponse(data)
-
-
 async def ping(request):
     async def get_requests(params, *args, **kwargs):
-        return {
-            'success': True,
-            'type': 'get',
-            'params': params,
-        }
+        return JsonResponse(
+            data = {
+                'success': True,
+                'type': 'get',
+                'params': params,
+            },
+            status = 200,
+        )
 
     async def post_requests(params, *args, **kwargs):
-        return {
-            'success': True,
-            'type': 'post',
-            'params': params,
-        }
+        return JsonResponse(
+            data = {
+                'success': True,
+                'type': 'post',
+                'params': params,
+            },
+            status = 200,
+        )
 
     result = {
         'success': True,
@@ -59,7 +58,7 @@ async def ping(request):
     except Exception as e:
         print(e)
     
-    return await response_wrapper(result)
+    return result
 
 
 @access
@@ -245,7 +244,7 @@ from finded_secret fs inner join finded_result fr on fr.id = fs.id;
             error = 'Token is not correct'
             id_data = None
 
-        return await response_wrapper(
+        return JsonResponse(
             data = {
                 'success': True,
                 'data': {
@@ -254,10 +253,14 @@ from finded_secret fs inner join finded_result fr on fr.id = fs.id;
                     'sender': id_data['sender'],
                     'error': id_data['error'],
                 },
-            } if not error else {
+            },
+            status = 200,
+        ) if not error else JsonResponse(
+            data = {
                 'success': False,
                 'error': error,
-            }
+            },
+            status = 400,
         )
     
 
@@ -283,7 +286,7 @@ from finded_secret fs inner join finded_result fr on fr.id = fs.id;
             }
         )
     
-    return await response_wrapper(result)
+    return result
 
 
 @access
@@ -312,20 +315,26 @@ async def file(request):
             file.seek(0)
             file.write(content)
 
-        return {
-            'success': True,
-            'type': 'post',
-            'file_name': file_name,
-        }
+        return JsonResponse(
+            data = {
+                'success': True,
+                'type': 'post',
+                'file_name': file_name,
+            },
+            status = 200,
+        )
 
 
     async def get_requests(params, *args, **kwargs):
         params = params.get('data', {})
 
-        return {
-            'success': True,
-            'type': 'get',
-        }
+        return JsonResponse(
+            data = {
+                'success': True,
+                'type': 'get',
+            },
+            status = 200,
+        )
     
 
     result = {"success": False}
@@ -350,7 +359,7 @@ async def file(request):
             }
         )
     
-    return await response_wrapper(result)
+    return result
 
 
 async def user(request):
@@ -384,19 +393,26 @@ returning *;"""
                     *args_query,
                 )
 
-        return {
-            'success': True,
-            'token': result['id'],
-        }
+        return JsonResponse(
+            data = {
+                'success': True,
+                'token': result['id'],
+            },
+            status = 200,
+        )
+        
 
 
     async def get_requests(params, *args, **kwargs):
         params = params.get('data', {})
 
-        return {
-            'success': True,
-            'type': 'get',
-        }
+        return JsonResponse(
+            data = {
+                'success': True,
+                'type': 'get',
+            },
+            status = 200,
+        )
     
 
     result = {"success": False}
@@ -421,4 +437,4 @@ returning *;"""
             }
         )
     
-    return await response_wrapper(result)
+    return result
