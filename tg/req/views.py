@@ -180,11 +180,14 @@ returning *;
 
         connection.close()
         
-        result = {
-            'success': True,
-            'id': build_message['id'],
-            'secret': secret,
-        }
+        result = JsonResponse(
+            data = {
+                'success': True,
+                'id': build_message['id'],
+                'secret': secret,
+            },
+            status = 200,
+        )
 
         return result
 
