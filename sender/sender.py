@@ -64,6 +64,7 @@ async def send_message(
             force_document = data.get('force_document', False),
             link_preview = data.get('preview', False),
             parse_mode = data.get('parse_mode', 'HTML'),
+            silent = data.get('silent', False),
         )
 
         if result.id:

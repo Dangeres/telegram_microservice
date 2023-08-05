@@ -124,6 +124,7 @@ async def message(request):
             'file': params.get('file', None),
             'reply_to': params.get('reply_to', None),
             'preview': params.get('preview', False),
+            'silent': params.get('silent', False),
             'force_document': params.get('force_document', False),
         }
 
